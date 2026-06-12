@@ -282,7 +282,6 @@
    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
    <script src="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin-2@4.1.4/js/sb-admin-2.min.js"></script>
 
-   <!-- custom JS (hanya untuk tampilan, belum integrasi API) -->
    <script>
       const dummyData = [
          { id: 1, tanggal: '2026-06-15', jam_masuk: '08:15:00', nik: 'EMP-001', nama: 'Rahmat', lokasi: 'Kantor Pusat Jakarta', catatan: '-', status: 'pending', foto: 'https://via.placeholder.com/50?text=Foto1' },
@@ -302,13 +301,13 @@
 
          let html = '';
          data.forEach((item, index) => {
-            // Badge status
+            // badge status
             let statusBadge = '';
             if (item.status === 'pending') statusBadge = '<span class="badge-pending"><i class="fas fa-clock"></i> Pending</span>';
             else if (item.status === 'approved') statusBadge = '<span class="badge-approved"><i class="fas fa-check"></i> Approved</span>';
             else if (item.status === 'rejected') statusBadge = '<span class="badge-rejected"><i class="fas fa-times"></i> Rejected</span>';
 
-            // Tombol aksi (hanya muncul jika status pending)
+            // tombol aksi (hanya muncul jika status pending)
             let actionButtons = '';
             if (item.status === 'pending') {
                actionButtons = `
@@ -342,13 +341,11 @@
          tbody.innerHTML = html;
       }
 
-      // fungsi lihat foto
       window.lihatFoto = function (fotoUrl) {
          document.getElementById('modalFoto').src = fotoUrl;
          $('#photoModal').modal('show');
       };
 
-      // fungsi approve
       window.approveData = function (id) {
          if (confirm('Setujui absensi ini?')) {
             alert(`Absensi ID ${id} berhasil disetujui (demo)`);
@@ -358,7 +355,6 @@
          }
       };
 
-      // fungsi show modal reject
       window.showRejectModal = function (id) {
          document.getElementById('rejectId').value = id;
          document.getElementById('alasanPenolakan').value = '';
@@ -408,12 +404,11 @@
          renderTable(currentData);
       });
 
-      // reset filter (opsional) - bisa ditambah tombol reset
+      // reset filter (opsional)
       document.getElementById('filterStartDate').addEventListener('change', () => document.getElementById('filterBtn').click());
       document.getElementById('filterEndDate').addEventListener('change', () => document.getElementById('filterBtn').click());
       document.getElementById('filterNama').addEventListener('keyup', () => document.getElementById('filterBtn').click());
 
-      // logout
       document.getElementById('logoutBtn').addEventListener('click', (e) => {
          e.preventDefault();
          if (confirm('Yakin ingin logout?')) {
