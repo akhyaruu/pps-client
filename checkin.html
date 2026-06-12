@@ -344,14 +344,15 @@
          }
 
          const formData = new FormData();
+         formData.append('id_pegawai', 2);
          formData.append('tanggal', document.getElementById('tanggal').value);
          formData.append('jam_masuk', document.getElementById('jam_masuk').value);
          formData.append('lokasi_masuk', document.getElementById('lokasi_masuk').value);
          formData.append('catatan', document.getElementById('catatan').value);
          formData.append('status', 'hadir');
-         formData.append('foto_masuk', fotoFile);
+         formData.append('foto', fotoFile);
 
-         const response = await fetch('http://localhost:3000/api/absensi/check-in', {
+         const response = await fetch('http://localhost:3000/absensi/check-in', {
             method: 'POST',
             body: formData
          });
@@ -360,9 +361,12 @@
 
          if (response.ok) {
             showAlert('✓ Check-in berhasil!', 'success');
-            setTimeout(() => {
-               window.location.href = 'dashboard.html';
-            }, 1500);
+            form.reset();
+            const previewContainer = document.getElementById('previewContainer');
+            const customFileLabel = document.querySelector('.custom-file-label');
+            previewContainer.style.display = 'none';
+            customFileLabel.textContent = 'Pilih file foto...';
+            updateDateTime();
          } else {
             showAlert(`Gagal: ${result.message || 'Terjadi kesalahan'}`, 'danger');
          }
