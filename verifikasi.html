@@ -163,10 +163,6 @@
                         <input type="date" class="form-control" id="filterEndDate">
                      </div>
                      <div class="col-md-2">
-                        <label><i class="fas fa-user"></i> Nama</label>
-                        <input type="text" class="form-control" id="filterNama" placeholder="Cari nama...">
-                     </div>
-                     <div class="col-md-2">
                         <label><i class="fas fa-filter"></i> Status</label>
                         <select class="form-control" id="filterStatus">
                            <option value="all">Semua Status</option>
@@ -199,7 +195,7 @@
                                  <th>No</th>
                                  <th>Tanggal</th>
                                  <th>Jam Masuk</th>
-                                 <th>NIK/Nama</th>
+                                 <th>Nama</th>
                                  <th>Lokasi</th>
                                  <th>Status</th>
                                  <th>Foto</th>
@@ -209,7 +205,7 @@
                            </thead>
                            <tbody id="tableBody">
                               <tr>
-                                 <td colspan="8" class="text-center">Loading data...</td>
+                                 <td colspan="9" class="text-center">Loading data...</td>
                               </tr>
                            </tbody>
                         </table>
@@ -283,17 +279,30 @@
    <script src="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin-2@4.1.4/js/sb-admin-2.min.js"></script>
 
    <script>
-      const dummyData = [
-         { id: 1, tanggal: '2026-06-15', jam_masuk: '08:15:00', nik: 'EMP-001', nama: 'Rahmat', lokasi: 'Kantor Pusat Jakarta', catatan: '-', status: 'pending', foto: 'https://via.placeholder.com/50?text=Foto1' },
-         { id: 2, tanggal: '2026-06-15', jam_masuk: '08:30:00', nik: 'EMP-002', nama: 'Salman', lokasi: 'Kantor Pusat Jakarta', catatan: 'Macet', status: 'pending', foto: 'https://via.placeholder.com/50?text=Foto2' },
-         { id: 3, tanggal: '2026-06-14', jam_masuk: '07:45:00', nik: 'EMP-003', nama: 'Nurul', lokasi: 'Cabang Bandung', catatan: '-', status: 'approved', foto: 'https://via.placeholder.com/50?text=Foto3' },
-         { id: 4, tanggal: '2026-06-13', jam_masuk: '09:00:00', nik: 'EMP-004', nama: 'Ahmed', lokasi: 'Cabang Surabaya', catatan: 'Sakit', status: 'rejected', foto: 'https://via.placeholder.com/50?text=Foto4' }
-      ];
+      const API_BASE = 'http://localhost:3000/absensi';
 
-      let currentData = [...dummyData];
+      async function loadData() {
+         try {
+            const response = await fetch(`${API_BASE}/?status_validasi=pending`);
+            const result = await response.json();
+
+            if (result.status && result.status.code === 200) {
+               const data = result.data && result.data.data ? result.data.data : [];
+               const sortedData = [...data].reverse();
+               renderTable(sortedData);
+            } else {
+               console.error("Gagal load data:", result.status?.msg || "Unknown error");
+               renderTable([]);
+            }
+         } catch (error) {
+            console.error("Error fetch:", error);
+            renderTable([]);
+         }
+      }
 
       function renderTable(data) {
          const tbody = document.getElementById('tableBody');
+
          if (!data || data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data</td></tr>';
             return;
@@ -301,15 +310,20 @@
 
          let html = '';
          data.forEach((item, index) => {
-            // badge status
-            let statusBadge = '';
-            if (item.status === 'pending') statusBadge = '<span class="badge-pending"><i class="fas fa-clock"></i> Pending</span>';
-            else if (item.status === 'approved') statusBadge = '<span class="badge-approved"><i class="fas fa-check"></i> Approved</span>';
-            else if (item.status === 'rejected') statusBadge = '<span class="badge-rejected"><i class="fas fa-times"></i> Rejected</span>';
 
-            // tombol aksi (hanya muncul jika status pending)
+            let statusBadge = '';
+            if (item.status_validasi === 'pending') {
+               statusBadge = '<span class="badge-pending"><i class="fas fa-clock"></i> Pending</span>';
+            } else if (item.status_validasi === 'approved') {
+               statusBadge = '<span class="badge-approved"><i class="fas fa-check"></i> Approved</span>';
+            } else if (item.status_validasi === 'rejected') {
+               statusBadge = '<span class="badge-rejected"><i class="fas fa-times"></i> Rejected</span>';
+            } else {
+               statusBadge = '<span class="badge-secondary">' + (item.status_validasi || '-') + '</span>';
+            }
+
             let actionButtons = '';
-            if (item.status === 'pending') {
+            if (item.status_validasi === 'pending') {
                actionButtons = `
                 <button class="btn btn-sm btn-success mr-1" onclick="approveData(${item.id})">
                     <i class="fas fa-check"></i> Setuju
@@ -319,41 +333,60 @@
                 </button>
             `;
             } else {
-               actionButtons = `<span class="text-muted">-</span>`;
+               actionButtons = '<span class="text-muted">-</span>';
             }
+
+            const namaPegawai = item.pegawai ? item.pegawai.nama : '-';
 
             html += `
             <tr>
-                <td>${index + 1}</td>
-                <td>${item.tanggal}</td>
-                <td>${item.jam_masuk}</td>
-                <td>${item.nik}<br><small class="text-muted">${item.nama}</small></td>
-                <td>${item.lokasi}</td>
-                <td class="text-center">${statusBadge}</td>
-                <td class="text-center">
-                    <img src="${item.foto}" class="table-img" alt="foto" onclick="lihatFoto('${item.foto}')" style="cursor: pointer;">
-                </td>
-                <td>${item.catatan}</td>
-                <td class="text-center">${actionButtons}</td>
+               <td class="text-center">${index + 1}</td>
+               <td>${item.tanggal || '-'}</td>
+               <td>${item.jam_masuk || '-'}</td>
+               <td>${namaPegawai}</td>
+               <td>${item.lokasi_masuk || '-'}</td>
+               <td class="text-center">${statusBadge}</td>
+               <td class="text-center">
+                  <i class="fas fa-camera fa-1x" 
+                     style="cursor: pointer; color: #4e73df;" 
+                     onclick="lihatFoto(${item.id})">
+                  </i>
+                  <br>
+                  <small class="text-muted" style="font-size: 10px;">Klik untuk lihat</small>
+               </td>
+               <td>${item.catatan || ''}</td>
+               <td class="text-center">${actionButtons}</td>
             </tr>
         `;
          });
+
          tbody.innerHTML = html;
       }
 
-      window.lihatFoto = function (fotoUrl) {
-         document.getElementById('modalFoto').src = fotoUrl;
-         $('#photoModal').modal('show');
-      };
+      async function approveData(id) {
+         if (!confirm('Setujui absensi ini?')) return;
 
-      window.approveData = function (id) {
-         if (confirm('Setujui absensi ini?')) {
-            alert(`Absensi ID ${id} berhasil disetujui (demo)`);
-            // Hapus dari tampilan sementara
-            currentData = currentData.filter(item => item.id !== id);
-            renderTable(currentData);
+         try {
+            const response = await fetch(`${API_BASE}/approve/${id}`, {
+               method: 'PUT',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({
+                  validasi_oleh: 'Admin-001'
+               })
+            });
+
+            const result = await response.json();
+
+            if (result.status && result.status.code === 200) {
+               alert('Absensi berhasil disetujui');
+               loadData(); // reload tabel
+            } else {
+               alert('Gagal: ' + (result.status?.msg || 'Terjadi kesalahan'));
+            }
+         } catch (error) {
+            alert('Error: ' + error.message);
          }
-      };
+      }
 
       window.showRejectModal = function (id) {
          document.getElementById('rejectId').value = id;
@@ -361,8 +394,7 @@
          $('#rejectModal').modal('show');
       };
 
-      // konfirmasi reject
-      document.getElementById('confirmRejectBtn').addEventListener('click', function () {
+      document.getElementById('confirmRejectBtn').addEventListener('click', async function () {
          const id = document.getElementById('rejectId').value;
          const alasan = document.getElementById('alasanPenolakan').value;
 
@@ -371,43 +403,75 @@
             return;
          }
 
-         alert(`Absensi ID ${id} berhasil ditolak.\nAlasan: ${alasan} (demo)`);
-         $('#rejectModal').modal('hide');
+         try {
+            const response = await fetch(`${API_BASE}/reject/${id}`, {
+               method: 'PUT',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({
+                  rejection_reason: alasan,
+                  validasi_oleh: 'Admin-001'
+               })
+            });
 
-         // hapus dari tampilan sementara
-         currentData = currentData.filter(item => item.id != id);
-         renderTable(currentData);
+            const result = await response.json();
+
+            if (result.status && result.status.code === 200) {
+               alert('Absensi berhasil ditolak');
+               $('#rejectModal').modal('hide');
+               loadData(); // reload tabel
+            } else {
+               alert('Gagal: ' + (result.status?.msg || 'Terjadi kesalahan'));
+            }
+         } catch (error) {
+            alert('Error: ' + error.message);
+         }
       });
 
-      // filter berdasarkan status, tanggal, nama
-      document.getElementById('filterBtn').addEventListener('click', function () {
+      window.lihatFoto = function (id) {
+         const fotoUrl = `${API_BASE}/photo/${id}`;
+         document.getElementById('modalFoto').src = fotoUrl;
+         $('#photoModal').modal('show');
+      };
+
+      document.getElementById('filterBtn').addEventListener('click', async function () {
          const startDate = document.getElementById('filterStartDate').value;
          const endDate = document.getElementById('filterEndDate').value;
-         const nama = document.getElementById('filterNama').value.toLowerCase();
          const status = document.getElementById('filterStatus').value;
 
-         let filtered = [...dummyData];
+         let queryParams = [];
 
-         if (status !== 'all') {
-            filtered = filtered.filter(item => item.status === status);
+         if (status && status !== 'all') {
+            queryParams.push(`status_validasi=${status}`);
          }
          if (startDate) {
-            filtered = filtered.filter(item => item.tanggal >= startDate);
+            queryParams.push(`startDate=${startDate}`);
          }
          if (endDate) {
-            filtered = filtered.filter(item => item.tanggal <= endDate);
+            queryParams.push(`endDate=${endDate}`);
          }
-         if (nama) {
-            filtered = filtered.filter(item => item.nama.toLowerCase().includes(nama));
-         }
-         currentData = filtered;
-         renderTable(currentData);
-      });
 
-      // reset filter (opsional)
-      document.getElementById('filterStartDate').addEventListener('change', () => document.getElementById('filterBtn').click());
-      document.getElementById('filterEndDate').addEventListener('change', () => document.getElementById('filterBtn').click());
-      document.getElementById('filterNama').addEventListener('keyup', () => document.getElementById('filterBtn').click());
+         let url = `${API_BASE}/`;
+         if (queryParams.length > 0) {
+            url += `?${queryParams.join('&')}`;
+         }
+
+         try {
+            const response = await fetch(url);
+            const result = await response.json();
+
+            if (result.status && result.status.code === 200) {
+               const data = result.data && result.data.data ? result.data.data : [];
+               const sortedData = [...data].reverse();
+               renderTable(sortedData);
+            } else {
+               console.error("Filter gagal:", result.status?.msg);
+               renderTable([]);
+            }
+         } catch (error) {
+            console.error("Error filter:", error);
+            renderTable([]);
+         }
+      });
 
       document.getElementById('logoutBtn').addEventListener('click', (e) => {
          e.preventDefault();
@@ -416,8 +480,7 @@
          }
       });
 
-      // initial render
-      renderTable(currentData);
+      loadData();
    </script>
 </body>
 
